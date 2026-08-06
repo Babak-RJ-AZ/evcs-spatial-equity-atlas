@@ -1,0 +1,12 @@
+{
+  "city": "Milan",
+  "country": "Italy",
+  "evcs_count": 182,
+  "unique_service_areas": 181,
+  "population_gini": 0.53,
+  "area_gini": 0.56,
+  "mean_population_coverage_pct": 92.17,
+  "mean_area_coverage_pct": 91.3,
+  "duplicate_note": "Two charging station records (source IDs 163 and 164) share identical coordinates and therefore generate one Thiessen service area.",
+  "doi": "10.1109/ICECET63943.2025.11472348"
+}

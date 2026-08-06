@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Interactive exploration of EV charging accessibility and spatial equity in Milan.">
+  <title>EV Charging Accessibility & Spatial Equity Atlas</title>
+  <link rel="preconnect" href="https://unpkg.com">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div>
+      <p class="eyebrow">Urban analytics research prototype</p>
+      <h1>EV Charging Accessibility & Spatial Equity Atlas</h1>
+      <p class="subtitle">Explore how public charging infrastructure serves urban space and population in Milan.</p>
+    </div>
+    <nav aria-label="Project links">
+      <a href="#atlas">Atlas</a>
+      <a href="#methodology">Methodology</a>
+      <a href="#publication">Publication</a>
+      <a href="https://github.com/Babak-RJ-AZ" target="_blank" rel="noreferrer">GitHub</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="intro">
+      <div>
+        <h2>Why this matters</h2>
+        <p>Charging infrastructure should not only be numerous. It should also be distributed so that residents and urban areas receive reasonably balanced access. This prototype links service area mapping with population and area based equity indicators.</p>
+      </div>
+      <div class="intro-note">
+        <strong>Current release</strong>
+        <span>Milan prototype. Amsterdam, Naples and Palermo will be added in later versions.</span>
+      </div>
+    </section>
+
+    <section id="atlas" class="atlas-section">
+      <div class="atlas-toolbar">
+        <div>
+          <label for="indicator">Map indicator</label>
+          <select id="indicator">
+            <option value="population_coverage_ratio">Population coverage</option>
+            <option value="area_coverage_ratio">Area coverage</option>
+            <option value="population_total">Population in service zone</option>
+          </select>
+        </div>
+        <div class="layer-switches" aria-label="Map layers">
+          <label><input id="toggleStations" type="checkbox" checked> Charging stations</label>
+          <label><input id="toggleService" type="checkbox" checked> Effective service areas</label>
+          <label><input id="toggleThiessen" type="checkbox"> Thiessen zones</label>
+        </div>
+      </div>
+
+      <div class="atlas-grid">
+        <div class="map-wrap">
+          <div id="map" aria-label="Interactive map of Milan EV charging service areas"></div>
+          <div id="legend" class="legend"></div>
+        </div>
+        <aside class="dashboard" aria-label="Milan summary">
+          <div class="dashboard-heading">
+            <p class="eyebrow">Case study</p>
+            <h2>Milan</h2>
+          </div>
+          <div class="metric-grid">
+            <article class="metric"><span>Charging stations</span><strong>182</strong></article>
+            <article class="metric"><span>Service zones</span><strong>181</strong></article>
+            <article class="metric"><span>Population Gini</span><strong>0.53</strong></article>
+            <article class="metric"><span>Area Gini</span><strong>0.56</strong></article>
+          </div>
+          <div class="insight">
+            <h3>Interpretation</h3>
+            <p>Milan shows moderate inequality in both population and area based coverage. Lower values indicate a more even distribution.</p>
+          </div>
+          <div id="selection" class="selection" aria-live="polite">
+            <h3>Explore a service zone</h3>
+            <p>Click a Thiessen polygon to inspect its population and coverage statistics.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section id="methodology" class="content-section">
+      <p class="eyebrow">Methodology</p>
+      <h2>From open data to spatial equity</h2>
+      <div class="workflow">
+        <article><span>1</span><h3>Collect</h3><p>Official city boundary, Meta population raster and Open Charge Map station points.</p></article>
+        <article><span>2</span><h3>Prepare</h3><p>Clip all datasets to the city and divide API search bounds into smaller retrieval grids.</p></article>
+        <article><span>3</span><h3>Allocate</h3><p>Create Thiessen polygons so every city location is assigned to its nearest charging station.</p></article>
+        <article><span>4</span><h3>Measure</h3><p>Intersect 1 km buffers with Thiessen zones and calculate covered population and area.</p></article>
+        <article><span>5</span><h3>Assess</h3><p>Use Lorenz curves and Gini coefficients to compare population and area based equity.</p></article>
+      </div>
+      <p class="method-note">Two source records in Milan share identical coordinates. They remain separate station records, but form one Thiessen service zone because coincident points cannot generate distinct polygons.</p>
+    </section>
+
+    <section id="publication" class="content-section publication">
+      <div>
+        <p class="eyebrow">Publication</p>
+        <h2>Electric Vehicles Charging Stations Distribution Equity Assessment Using GIS and Gini Coefficient</h2>
+        <p>Babak Ranjgar, Alessandro Niccolai and Sonia Leva. ICECET 2025, Paris.</p>
+      </div>
+      <a class="button" href="https://doi.org/10.1109/ICECET63943.2025.11472348" target="_blank" rel="noreferrer">View paper</a>
+    </section>
+  </main>
+
+  <footer>
+    <span>Research prototype by Babak Ranjgar</span>
+    <span>Data sources: official city boundaries, Meta Data for Good and Open Charge Map</span>
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>

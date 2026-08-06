@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this project, please cite the associated paper."
+title: "EV Charging Accessibility & Spatial Equity Atlas"
+type: software
+authors:
+  - family-names: Ranjgar
+    given-names: Babak
+repository-code: "https://github.com/Babak-RJ-AZ/evcs-spatial-equity-atlas"
+url: "https://github.com/Babak-RJ-AZ/evcs-spatial-equity-atlas"
+license: MIT
+preferred-citation:
+  type: conference-paper
+  title: "Electric Vehicles Charging Stations Distribution Equity Assessment Using GIS and Gini Coefficient"
+  authors:
+    - family-names: Ranjgar
+      given-names: Babak
+    - family-names: Niccolai
+      given-names: Alessandro
+    - family-names: Leva
+      given-names: Sonia
+  year: 2025
+  doi: "10.1109/ICECET63943.2025.11472348"
