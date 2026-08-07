@@ -1,12 +1,1 @@
-{
-  "city": "Milan",
-  "country": "Italy",
-  "evcs_count": 182,
-  "unique_service_areas": 181,
-  "population_gini": 0.53,
-  "area_gini": 0.56,
-  "mean_population_coverage_pct": 92.17,
-  "mean_area_coverage_pct": 91.3,
-  "duplicate_note": "Two charging station records (source IDs 163 and 164) share identical coordinates and therefore generate one Thiessen service area.",
-  "doi": "10.1109/ICECET63943.2025.11472348"
-}
+{"amsterdam":{"name":"Amsterdam","country":"Netherlands","stations":436,"service_zones":436,"population_gini":0.42,"area_gini":0.49,"interpretation":"The lowest Gini values among the four case studies indicate the most even EV charging distribution in both population and area based assessments."},"milan":{"name":"Milan","country":"Italy","stations":182,"service_zones":181,"population_gini":0.53,"area_gini":0.56,"interpretation":"Milan shows moderate inequality in both population and area based coverage, while performing better than Naples and Palermo in the study."},"naples":{"name":"Naples","country":"Italy","stations":15,"service_zones":15,"population_gini":0.61,"area_gini":0.65,"interpretation":"Naples has the highest Gini values in the comparison, indicating the strongest spatial inequality in both assessment scenarios."},"palermo":{"name":"Palermo","country":"Italy","stations":21,"service_zones":21,"population_gini":0.57,"area_gini":0.59,"interpretation":"Palermo shows substantial inequality in both population and area based coverage, between Milan and Naples in the four city comparison."}}

@@ -6,8 +6,10 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 let boundaryLayer, stationLayer, serviceLayer, thiessenLayer;
-let thiessenData;
 let currentIndicator = 'population_coverage_ratio';
+let currentCity = 'milan';
+let requestToken = 0;
+let summaries = {};
 
 const indicatorMeta = {
   population_coverage_ratio: { label: 'Population coverage', format: v => `${(v * 100).toFixed(1)}%`, breaks: [0.5, 0.75, 0.9, 0.99] },
@@ -41,12 +43,12 @@ function selectFeature(feature, layer) {
   document.getElementById('selection').innerHTML = `
     <h3>Service zone ${p.service_id}</h3>
     <dl>
-      <dt>Population</dt><dd>${Math.round(p.population_total).toLocaleString()}</dd>
-      <dt>Population covered</dt><dd>${Math.round(p.population_covered).toLocaleString()}</dd>
-      <dt>Population coverage</dt><dd>${(p.population_coverage_ratio * 100).toFixed(1)}%</dd>
-      <dt>Zone area</dt><dd>${p.thiessen_area_km2.toFixed(2)} km²</dd>
-      <dt>Area covered</dt><dd>${p.area_covered_km2.toFixed(2)} km²</dd>
-      <dt>Area coverage</dt><dd>${(p.area_coverage_ratio * 100).toFixed(1)}%</dd>
+      <dt>Population</dt><dd>${Math.round(p.population_total || 0).toLocaleString()}</dd>
+      <dt>Population covered</dt><dd>${Math.round(p.population_covered || 0).toLocaleString()}</dd>
+      <dt>Population coverage</dt><dd>${((p.population_coverage_ratio || 0) * 100).toFixed(1)}%</dd>
+      <dt>Zone area</dt><dd>${Number(p.thiessen_area_km2 || 0).toFixed(2)} km²</dd>
+      <dt>Area covered</dt><dd>${Number(p.area_covered_km2 || 0).toFixed(2)} km²</dd>
+      <dt>Area coverage</dt><dd>${((p.area_coverage_ratio || 0) * 100).toFixed(1)}%</dd>
     </dl>`;
 }
 
@@ -59,43 +61,100 @@ function addLegend() {
   document.getElementById('legend').innerHTML = `<div class="legend-title">${meta.label}</div>` + labels.map((x,i)=>`<div class="legend-row"><span class="legend-swatch" style="background:${palette[i]}"></span>${x}</div>`).join('');
 }
 
-Promise.all([
-  fetch('data/boundary_milan.geojson').then(r => r.json()),
-  fetch('data/evcs_milan.geojson').then(r => r.json()),
-  fetch('data/service_area_milan.geojson').then(r => r.json()),
-  fetch('data/thiessen_milan.geojson').then(r => r.json())
-]).then(([boundary, stations, service, thiessen]) => {
-  thiessenData = thiessen;
-  boundaryLayer = L.geoJSON(boundary, { style: { color:'#17212b', weight:2, fillOpacity:0 } }).addTo(map);
-  serviceLayer = L.geoJSON(service, { style: { color:'#165d73', weight:0.7, fillColor:'#8fb9c5', fillOpacity:0.28 } }).addTo(map);
-  stationLayer = L.geoJSON(stations, {
-    pointToLayer: (feature, latlng) => L.circleMarker(latlng, { radius:3.2, color:'#fff', weight:1, fillColor:'#17212b', fillOpacity:.95 }),
-    onEachFeature: (feature, layer) => {
-      const p=feature.properties;
-      layer.bindPopup(`<div class="popup-title">${p.title || 'Charging station'}</div>${p.address || ''}${p.postcode ? `<br>${p.postcode}`:''}${p.number_of_points ? `<br>Charging points: ${p.number_of_points}`:''}`);
-    }
-  }).addTo(map);
-  thiessenLayer = L.geoJSON(thiessen, {
-    style: polygonStyle,
-    onEachFeature: (feature, layer) => {
-      layer.on({ click: () => selectFeature(feature, layer), mouseover: () => layer.setStyle({weight:1.8,color:'#17212b'}), mouseout: () => thiessenLayer.resetStyle(layer) });
-      const p=feature.properties;
-      layer.bindTooltip(`Zone ${p.service_id}: ${(p.population_coverage_ratio*100).toFixed(1)}% population coverage`);
-    }
+function removeCurrentLayers() {
+  [boundaryLayer, stationLayer, serviceLayer, thiessenLayer].forEach(layer => {
+    if (layer && map.hasLayer(layer)) map.removeLayer(layer);
   });
-  map.fitBounds(boundaryLayer.getBounds(), { padding:[12,12] });
-  addLegend();
+  boundaryLayer = stationLayer = serviceLayer = thiessenLayer = null;
+}
+
+function setDashboard(cityKey) {
+  const s = summaries[cityKey];
+  if (!s) return;
+  document.getElementById('cityName').textContent = s.name;
+  document.getElementById('stationCount').textContent = s.stations.toLocaleString();
+  document.getElementById('zoneCount').textContent = s.service_zones.toLocaleString();
+  document.getElementById('populationGini').textContent = Number(s.population_gini).toFixed(2);
+  document.getElementById('areaGini').textContent = Number(s.area_gini).toFixed(2);
+  document.getElementById('interpretation').textContent = s.interpretation;
+  document.getElementById('selection').innerHTML = '<h3>Explore a service zone</h3><p>Turn on Thiessen zones and click a polygon to inspect its population and coverage statistics.</p>';
+}
+
+async function loadCity(cityKey) {
+  currentCity = cityKey;
+  const token = ++requestToken;
+  const loading = document.getElementById('loading');
+  loading.classList.add('visible');
+  setDashboard(cityKey);
+  try {
+    const [boundary, stations, service, thiessen] = await Promise.all([
+      fetch(`data/boundary_${cityKey}.geojson`).then(r => { if(!r.ok) throw new Error(r.status); return r.json(); }),
+      fetch(`data/evcs_${cityKey}.geojson`).then(r => { if(!r.ok) throw new Error(r.status); return r.json(); }),
+      fetch(`data/service_area_${cityKey}.geojson`).then(r => { if(!r.ok) throw new Error(r.status); return r.json(); }),
+      fetch(`data/thiessen_${cityKey}.geojson`).then(r => { if(!r.ok) throw new Error(r.status); return r.json(); })
+    ]);
+    if (token !== requestToken) return;
+    removeCurrentLayers();
+    boundaryLayer = L.geoJSON(boundary, { style: { color:'#17212b', weight:2, fillOpacity:0 } }).addTo(map);
+    serviceLayer = L.geoJSON(service, { style: { color:'#165d73', weight:0.7, fillColor:'#8fb9c5', fillOpacity:0.28 } });
+    stationLayer = L.geoJSON(stations, {
+      pointToLayer: (feature, latlng) => L.circleMarker(latlng, { radius:3.2, color:'#fff', weight:1, fillColor:'#17212b', fillOpacity:.95 }),
+      onEachFeature: (feature, layer) => {
+        const p=feature.properties;
+        const extra = p.power_kw ? `<br>Max recorded power: ${p.power_kw} kW` : '';
+        layer.bindPopup(`<div class="popup-title">${p.title || 'Charging station'}</div>${p.address || ''}${p.postcode ? `<br>${p.postcode}`:''}${p.number_of_points ? `<br>Charging points: ${p.number_of_points}`:''}${extra}`);
+      }
+    });
+    thiessenLayer = L.geoJSON(thiessen, {
+      style: polygonStyle,
+      onEachFeature: (feature, layer) => {
+        layer.on({ click: () => selectFeature(feature, layer), mouseover: () => layer.setStyle({weight:1.8,color:'#17212b'}), mouseout: () => thiessenLayer && thiessenLayer.resetStyle(layer) });
+        const p=feature.properties;
+        layer.bindTooltip(`Zone ${p.service_id}: ${((p.population_coverage_ratio || 0)*100).toFixed(1)}% population coverage`);
+      }
+    });
+    if (document.getElementById('toggleService').checked) serviceLayer.addTo(map);
+    if (document.getElementById('toggleStations').checked) stationLayer.addTo(map);
+    if (document.getElementById('toggleThiessen').checked) thiessenLayer.addTo(map);
+    map.fitBounds(boundaryLayer.getBounds(), { padding:[18,18] });
+    addLegend();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('selection').innerHTML = '<h3>Data loading error</h3><p>The selected city data could not be loaded. Please refresh the page.</p>';
+  } finally {
+    if (token === requestToken) loading.classList.remove('visible');
+  }
+}
+
+fetch('data/summary.json').then(r => r.json()).then(data => {
+  summaries = data;
+  loadCity('milan');
 }).catch(err => {
   console.error(err);
-  document.getElementById('map').innerHTML = '<p style="padding:2rem">Map data could not be loaded. Run the project through a local web server or GitHub Pages.</p>';
+  document.getElementById('loading').textContent = 'Summary data could not be loaded.';
+  document.getElementById('loading').classList.add('visible');
 });
 
-document.getElementById('toggleStations').addEventListener('change', e => e.target.checked ? stationLayer.addTo(map) : map.removeLayer(stationLayer));
-document.getElementById('toggleService').addEventListener('change', e => e.target.checked ? serviceLayer.addTo(map) : map.removeLayer(serviceLayer));
-document.getElementById('toggleThiessen').addEventListener('change', e => e.target.checked ? thiessenLayer.addTo(map) : map.removeLayer(thiessenLayer));
+document.getElementById('city').addEventListener('change', e => loadCity(e.target.value));
+document.getElementById('toggleStations').addEventListener('change', e => {
+  if (!stationLayer) return;
+  e.target.checked ? stationLayer.addTo(map) : map.removeLayer(stationLayer);
+});
+document.getElementById('toggleService').addEventListener('change', e => {
+  if (!serviceLayer) return;
+  e.target.checked ? serviceLayer.addTo(map) : map.removeLayer(serviceLayer);
+});
+document.getElementById('toggleThiessen').addEventListener('change', e => {
+  if (!thiessenLayer) return;
+  e.target.checked ? thiessenLayer.addTo(map) : map.removeLayer(thiessenLayer);
+});
 document.getElementById('indicator').addEventListener('change', e => {
   currentIndicator = e.target.value;
-  if (!map.hasLayer(thiessenLayer)) { thiessenLayer.addTo(map); document.getElementById('toggleThiessen').checked = true; }
+  if (!thiessenLayer) return;
+  if (!map.hasLayer(thiessenLayer)) {
+    thiessenLayer.addTo(map);
+    document.getElementById('toggleThiessen').checked = true;
+  }
   thiessenLayer.setStyle(polygonStyle);
   addLegend();
 });
